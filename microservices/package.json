@@ -1,0 +1,18 @@
+{
+  "name": "realworld-sports-matchmaking",
+  "version": "1.0.0",
+  "description": "Real-World Sports Matchmaking Platform - Microservices",
+  "private": true,
+  "workspaces": [
+    "api-gateway",
+    "user-service",
+    "lobby-service",
+    "rating-service",
+    "notification-service"
+  ],
+  "scripts": {
+    "setup": "npm install",
+    "dev": "docker-compose -f docker/docker-compose.yml up",
+    "down": "docker-compose -f docker/docker-compose.yml down"
+  }
+}
