@@ -1,27 +1,39 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
+const errorHandler = require('./middleware/errorHandler');
+const userRoutes = require('./routes/user.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+console.log('=== USER SERVICE STARTING ===');
+console.log('PORT:', PORT);
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'LOADED' : 'MISSING');
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'LOADED' : 'MISSING');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`[User Service] ${req.method} ${req.url}`);
+  console.log('Body:', req.body);
+  next();
+});
+
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('MongoDB connected successfully');
+    console.log('✓ MongoDB connected successfully');
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    console.error('✗ MongoDB connection error:', error);
     process.exit(1);
   }
 };
 
-// Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 
@@ -31,11 +43,14 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
-// TODO: Add user routes
+app.use('/users', userRoutes);
+
+// Error handling - MUST be last
+app.use(errorHandler);
 
 // Start server
 connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`User Service running on port ${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✓ User Service running on port ${PORT}`);
   });
 });

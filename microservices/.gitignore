@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+target/
+.gradle/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+out/
+bin/
+
+# Java-specific
+*.class
+*.jar
+*.war
+.gradle/
+bin/
+
+# Python (if needed later)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Docker
+.dockerignore

@@ -1,12 +1,11 @@
-FROM node:18-alpine
+FROM nginx:alpine
 
-WORKDIR /app
+# Remove default nginx config
+RUN rm /etc/nginx/nginx.conf
 
-COPY package*.json ./
-RUN npm install
-
-COPY . .
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["nginx", "-g", "daemon off;"]
