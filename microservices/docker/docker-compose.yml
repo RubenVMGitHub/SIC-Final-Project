@@ -11,6 +11,7 @@ services:
       - "3000:3000"
     depends_on:
       - user-service
+      - lobby-service
     networks:
       - sports-net
 
@@ -27,6 +28,22 @@ services:
       LOG_LEVEL: info
     depends_on:
       - mongo-user
+    networks:
+      - sports-net
+
+  # Lobby Service
+  lobby-service:
+    build:
+      context: ../lobby-service
+      dockerfile: Dockerfile
+    container_name: lobby-service
+    environment:
+      PORT: 3002
+      MONGODB_URI: mongodb://root:root@mongo-lobby:27017/lobby-db?authSource=admin
+      JWT_SECRET: your_jwt_secret_here_change_this_in_production
+      LOG_LEVEL: info
+    depends_on:
+      - mongo-lobby
     networks:
       - sports-net
 
@@ -48,6 +65,8 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27018:27017"
     networks:
       - sports-net
 

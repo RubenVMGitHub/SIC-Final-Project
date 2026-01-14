@@ -1,0 +1,8 @@
+type Query {
+  popularSports: [SportStat!]!
+}
+
+type SportStat {
+  sport: String!
+  matches: Int!
+}

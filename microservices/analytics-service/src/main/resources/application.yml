@@ -3,7 +3,7 @@ spring:
     name: analytics-service
   data:
     mongodb:
-      uri: mongodb://admin:admin123@mongodb:27017/analytics_db?authSource=admin
+      uri: mongodb://root:root@mongo-analytics:27017/analytics-db?authSource=admin
       database: analytics_db
   graphql:
     graphiql:

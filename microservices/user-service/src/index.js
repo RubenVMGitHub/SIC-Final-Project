@@ -9,9 +9,6 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 console.log('=== USER SERVICE STARTING ===');
-console.log('PORT:', PORT);
-console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'LOADED' : 'MISSING');
-console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'LOADED' : 'MISSING');
 
 // Middleware
 app.use(cors());
@@ -45,7 +42,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/users', userRoutes);
 
-// Error handling - MUST be last
+// Error handling
 app.use(errorHandler);
 
 // Start server
