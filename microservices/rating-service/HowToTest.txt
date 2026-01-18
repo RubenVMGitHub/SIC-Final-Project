@@ -1,0 +1,62 @@
+Testing the GraphQL Rating Service:
+# 1. Setup - Register users and create a finished lobby
+TOKEN1=$(curl -s -X POST http://localhost:3000/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"player1@test.com","password":"pass123"}' | jq -r '.token')
+
+TOKEN2=$(curl -s -X POST http://localhost:3000/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"player2@test.com","password":"pass123"}' | jq -r '.token')
+
+# Create lobby
+LOBBY_ID=$(curl -s -X POST http://localhost:3000/lobbies \
+  -H "Authorization: Bearer $TOKEN1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sport":"Football",
+    "location":"Stadium",
+    "time":"2026-01-20T18:00:00Z",
+    "maxPlayers":10
+  }' | jq -r '._id')
+
+# Player 2 joins
+curl -X POST http://localhost:3000/lobbies/$LOBBY_ID/join \
+  -H "Authorization: Bearer $TOKEN2" \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"Player Two"}'
+
+# Finish lobby
+curl -X PUT http://localhost:3000/lobbies/$LOBBY_ID/finish \
+  -H "Authorization: Bearer $TOKEN1"
+
+# 2. Submit a rating (LIKE)
+curl -X POST http://localhost:3000/graphql \
+  -H "Authorization: Bearer $TOKEN1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { submitRating(input: { toUserId: \"PLAYER2_ID\", lobbyId: \"'$LOBBY_ID'\", type: LIKE, category: Friendly }) { _id type category createdAt } }"
+  }' | jq
+
+# 3. Get my ratings
+curl -X POST http://localhost:3000/graphql \
+  -H "Authorization: Bearer $TOKEN2" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { myRatings { _id type category lobbyId createdAt } }"
+  }' | jq
+
+# 4. Get rating stats
+curl -X POST http://localhost:3000/graphql \
+  -H "Authorization: Bearer $TOKEN2" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { myRatingStats { totalRatings likes { total Friendly Communicative Sporty Fair } dislikes { total Toxic Aggressive Sloppy Unfair } } }"
+  }' | jq
+
+# 5. Get eligible users to rate
+curl -X POST http://localhost:3000/graphql \
+  -H "Authorization: Bearer $TOKEN1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { eligibleUsersToRate(lobbyId: \"'$LOBBY_ID'\") { userId displayName } }"
+  }' | jq
