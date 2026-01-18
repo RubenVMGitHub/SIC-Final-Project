@@ -10,6 +10,7 @@ services:
     depends_on:
       - user-service
       - lobby-service
+      - rating-service
     networks:
       - sports-net
 
@@ -45,6 +46,24 @@ services:
     networks:
       - sports-net
 
+  # Rating Service (GraphQL)
+  rating-service:
+    build:
+      context: ../rating-service
+      dockerfile: Dockerfile
+    container_name: rating-service
+    environment:
+      PORT: 3003
+      MONGODB_URI: mongodb://root:root@mongo-rating:27017/rating-db?authSource=admin
+      JWT_SECRET: your_jwt_secret_here_change_this_in_production
+      LOG_LEVEL: info
+      LOBBY_SERVICE_URL: http://lobby-service:3002
+    depends_on:
+      - mongo-rating
+      - lobby-service
+    networks:
+      - sports-net
+
   # MongoDB Databases
   mongo-user:
     image: mongo:7
@@ -74,6 +93,8 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27019:27017"
     networks:
       - sports-net
 
