@@ -23,6 +23,7 @@ Taking inspiration from the well-known gaming platform FACEIT, this is a microse
   - [Testing](#testing)
   - [Troubleshooting](#troubleshooting)
 - [Supported Sports](#️-supported-sports)
+- [Sequence Diagrams](#️-sequence-diagrams)
 - [Project Contributors](#-project-contributors)
 
 ---
