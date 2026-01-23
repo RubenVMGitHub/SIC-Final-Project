@@ -408,6 +408,22 @@ The platform supports the following sports:
 
 ---
 
+## 🗂️ Sequence Diagrams
+
+### User Flow Sequence Diagram - Joining a Lobby and Rating a User
+
+<p align="center">
+  <img src="/assets/joiningLobby_ratingUser_userFlow_sequenceDiagram.png" alt="" />
+</p>
+
+### User Flow Sequence Diagram - Sending a Friend Request
+
+<p align="center">
+  <img src="/assets/POST_friendRequest_sequenceDiagram.png" alt="" />
+</p>
+
+---
+
 ## 👥 Project Contributors
 
 ### Development Team
