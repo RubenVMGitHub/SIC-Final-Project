@@ -1,5 +1,6 @@
 const Lobby = require('../models/Lobby');
 const logger = require('../config/logger');
+const rabbitmq = require('../config/rabbitmq');
 
 class LobbyService {
   /**
@@ -138,6 +139,14 @@ class LobbyService {
 
     // Add player
     lobby.players.push({ userId, displayName });
+
+    // Publish to RabbitMQ
+    await rabbitmq.publishLobbyJoin(
+      lobby._id.toString(),
+      lobby.ownerId.toString(),
+      userId,
+      lobby.sport + ' @ ' + lobby.location
+    );
 
     // Update status if full
     if (lobby.players.length >= lobby.maxPlayers) {

@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
 const logger = require('../config/logger');
+const rabbitmq = require('../config/rabbitmq');
 
 class UserService {
   /**
@@ -90,6 +91,8 @@ class UserService {
       to: toUserId,
       status: 'pending'
     });
+
+    await rabbitmq.publishFriendRequest(fromUserId, toUserId);
 
     logger.info(`Friend request sent from ${fromUserId} to ${toUserId}`);
     return friendRequest;

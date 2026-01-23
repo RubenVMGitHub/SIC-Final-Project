@@ -1,0 +1,172 @@
+# Testing Notification Service
+
+# 1. Setup - Register and Login Users
+# Register User 1
+curl -X POST http://localhost:3000/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user1@test.com",
+    "password": "pass123",
+    "displayName": "User One",
+    "favouriteSport": "Football"
+  }'
+
+# Register User 2
+curl -X POST http://localhost:3000/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user2@test.com",
+    "password": "pass123",
+    "displayName": "User Two",
+    "favouriteSport": "Basketball"
+  }'
+
+# Login User 1
+TOKEN1=$(curl -s -X POST http://localhost:3000/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user1@test.com","password":"pass123"}' | jq -r '.token')
+
+# Login User 2
+TOKEN2=$(curl -s -X POST http://localhost:3000/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user2@test.com","password":"pass123"}' | jq -r '.token')
+
+# Get User IDs
+USER1_ID=$(curl -s http://localhost:3000/users/me \
+  -H "Authorization: Bearer $TOKEN1" | jq -r '._id')
+
+USER2_ID=$(curl -s http://localhost:3000/users/me \
+  -H "Authorization: Bearer $TOKEN2" | jq -r '._id')
+
+echo "User 1 ID: $USER1_ID"
+echo "User 2 ID: $USER2_ID"
+
+# 2. Test Friend Request Notification
+# User 1 sends friend request to User 2
+curl -X POST http://localhost:3000/users/friend-requests \
+  -H "Authorization: Bearer $TOKEN1" \
+  -H "Content-Type: application/json" \
+  -d "{\"toUserId\":\"$USER2_ID\"}" | jq
+
+# Wait for event to process
+sleep 2
+
+# User 2 checks their notifications (should see friend request)
+curl -s http://localhost:3000/notifications/me \
+  -H "Authorization: Bearer $TOKEN2" | jq
+
+# Expected Response:
+# {
+#   "notifications": [
+#     {
+#       "_id": "...",
+#       "type": "friend_request",
+#       "fromUserId": "USER1_ID",
+#       "message": "You have a new friend request",
+#       "isRead": false,
+#       "createdAt": "2026-01-22T15:00:00Z"
+#     }
+#   ],
+#   "total": 1,
+#   "unreadCount": 1
+# }
+
+# 3. Test Lobby Join Notification
+# User 1 creates a lobby
+LOBBY_ID=$(curl -s -X POST http://localhost:3000/lobbies \
+  -H "Authorization: Bearer $TOKEN1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sport": "Football",
+    "location": "Central Park",
+    "time": "2026-01-25T18:00:00Z",
+    "maxPlayers": 10,
+    "description": "Friendly match"
+  }' | jq -r '._id')
+
+echo "Lobby ID: $LOBBY_ID"
+
+# User 2 joins the lobby (triggers notification for User 1)
+curl -X POST http://localhost:3000/lobbies/$LOBBY_ID/join \
+  -H "Authorization: Bearer $TOKEN2" \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"User Two"}' | jq
+
+# Wait for event to process
+sleep 2
+
+# User 1 checks their notifications (should see lobby join)
+curl -s http://localhost:3000/notifications/me \
+  -H "Authorization: Bearer $TOKEN1" | jq
+
+# Expected Response:
+# {
+#   "notifications": [
+#     {
+#       "_id": "...",
+#       "type": "lobby_join",
+#       "playerId": "USER2_ID",
+#       "lobbyId": "LOBBY_ID",
+#       "lobbyName": "Football @ Central Park",
+#       "message": "A player joined your lobby: Football @ Central Park",
+#       "isRead": false,
+#       "createdAt": "2026-01-22T15:02:00Z"
+#     }
+#   ],
+#   "total": 1,
+#   "unreadCount": 1
+# }
+
+# 4. Test Mark Notification as Read
+# Get notification ID from User 2's notifications
+NOTIF_ID=$(curl -s http://localhost:3000/notifications/me \
+  -H "Authorization: Bearer $TOKEN2" | jq -r '.notifications[0]._id')
+
+echo "Notification ID: $NOTIF_ID"
+
+# Mark it as read
+curl -s -X PATCH http://localhost:3000/notifications/$NOTIF_ID/read \
+  -H "Authorization: Bearer $TOKEN2" | jq
+
+# Expected Response:
+# {
+#   "message": "Notification marked as read successfully",
+#   "notificationId": "...",
+#   "isRead": true
+# }
+
+# Check notifications again (should be empty now)
+curl -s http://localhost:3000/notifications/me \
+  -H "Authorization: Bearer $TOKEN2" | jq
+
+# Expected Response:
+# {
+#   "notifications": [],
+#   "total": 0,
+#   "unreadCount": 0
+# }
+
+# 5. Test Health Check
+curl http://localhost:3000/notifications/health | jq
+
+# 6. Test Error Scenarios
+
+# Try to access without token (should return 401)
+curl -s http://localhost:3000/notifications/me | jq
+
+# Try to mark someone else's notification as read (should return 403)
+# Get a notification ID from User 1
+NOTIF1_ID=$(curl -s http://localhost:3000/notifications/me \
+  -H "Authorization: Bearer $TOKEN1" | jq -r '.notifications[0]._id')
+
+# Try to mark it as read with User 2's token
+curl -s -X PATCH http://localhost:3000/notifications/$NOTIF1_ID/read \
+  -H "Authorization: Bearer $TOKEN2" | jq
+
+# Try invalid notification ID (should return 400)
+curl -s -X PATCH http://localhost:3000/notifications/invalid-id/read \
+  -H "Authorization: Bearer $TOKEN2" | jq
+
+# Try non-existent notification ID (should return 404)
+curl -s -X PATCH http://localhost:3000/notifications/507f1f77bcf86cd799439011/read \
+  -H "Authorization: Bearer $TOKEN2" | jq

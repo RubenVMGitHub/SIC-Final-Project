@@ -6,6 +6,7 @@ const pinoHttp = require('pino-http');
 const logger = require('./config/logger');
 const errorHandler = require('./middleware/errorHandler');
 const lobbyRoutes = require('./routes/lobby.routes');
+const rabbitmq = require('./config/rabbitmq');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -14,6 +15,7 @@ logger.info('=== LOBBY SERVICE STARTING ===');
 logger.info(`PORT: ${PORT}`);
 logger.info(`JWT_SECRET: ${process.env.JWT_SECRET ? 'LOADED' : 'MISSING'}`);
 logger.info(`MONGODB_URI: ${process.env.MONGODB_URI ? 'LOADED' : 'MISSING'}`);
+logger.info(`RABBITMQ_URL: ${process.env.RABBITMQ_URL ? 'LOADED' : 'MISSING'}`);
 
 // Middleware
 app.use(cors());
@@ -48,6 +50,15 @@ const connectDB = async () => {
   }
 };
 
+const connectRabbitMQ = async () => {
+  try {
+    await rabbitmq.connect();
+  } catch (error) {
+    logger.error('✗ RabbitMQ connection error:', error);
+    // sem exit
+  }
+};
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -64,8 +75,8 @@ app.use('/lobbies', lobbyRoutes);
 app.use(errorHandler);
 
 // Start server
-connectDB().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    logger.info(`✓ Lobby Service running on port ${PORT}`);
+Promise.all([connectDB(), connectRabbitMQ()]).then(() => {
+  app.listen(PORT, () => {
+    logger.info(`✓ Lobby Service listening on port ${PORT}`);
   });
 });
