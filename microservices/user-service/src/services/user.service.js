@@ -113,26 +113,21 @@ class UserService {
   }
 
   /**
-   * Respond to friend request (accept/reject)
+   * Respond to friend request (accept/reject) by userId
    */
-  async respondToFriendRequest(requestId, userId, action) {
+  async respondToFriendRequest(toUserId, fromUserId, action) {
     if (!['accept', 'reject'].includes(action)) {
       throw new Error('Invalid action. Must be "accept" or "reject"');
     }
 
-    const friendRequest = await FriendRequest.findById(requestId);
+    const friendRequest = await FriendRequest.findOne({
+      from: fromUserId,
+      to: toUserId,
+      status: 'pending'
+    });
 
     if (!friendRequest) {
       throw new Error('Friend request not found');
-    }
-
-    // verifies that the request is for this user
-    if (friendRequest.to.toString() !== userId) {
-      throw new Error('Unauthorized to respond to this request');
-    }
-
-    if (friendRequest.status !== 'pending') {
-      throw new Error('Friend request already processed');
     }
 
     if (action === 'accept') {
@@ -147,10 +142,10 @@ class UserService {
       ]);
 
       friendRequest.status = 'accepted';
-      logger.info(`Friend request accepted: ${requestId}`);
+      logger.info(`Friend request accepted: ${fromUserId} -> ${toUserId}`);
     } else {
       friendRequest.status = 'rejected';
-      logger.info(`Friend request rejected: ${requestId}`);
+      logger.info(`Friend request rejected: ${fromUserId} -> ${toUserId}`);
     }
 
     await friendRequest.save();

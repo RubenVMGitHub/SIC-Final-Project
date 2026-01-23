@@ -21,10 +21,10 @@ router.get('/', lobbyController.getLobbies);
 router.get('/:id', lobbyController.getLobbyById);
 
 /**
- * PUT /lobbies/:id
+ * PATCH /lobbies/:id
  * Update lobby (owner only)
  */
-router.put('/:id', auth, lobbyController.updateLobby);
+router.patch('/:id', auth, lobbyController.updateLobby);
 
 /**
  * POST /lobbies/:id/join
@@ -45,10 +45,10 @@ router.post('/:id/leave', auth, lobbyController.leaveLobby);
 router.delete('/:id/players/:playerId', auth, lobbyController.kickPlayer);
 
 /**
- * PUT /lobbies/:id/finish
+ * PATCH /lobbies/:id/finish
  * Mark lobby as finished (owner only)
  */
-router.put('/:id/finish', auth, lobbyController.finishLobby);
+router.patch('/:id/finish', auth, lobbyController.finishLobby);
 
 /**
  * DELETE /lobbies/:id
