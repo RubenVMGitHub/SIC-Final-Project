@@ -1,0 +1,186 @@
+version: '3.8'
+
+services:
+  # MongoDB - User Service
+  mongo-users:
+    image: mongo:8
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    networks:
+      - sports-net
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  # MongoDB - Lobby Service
+  mongo-lobby:
+    image: mongo:8
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    networks:
+      - sports-net
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  # MongoDB - Rating Service
+  mongo-rating:
+    image: mongo:8
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    networks:
+      - sports-net
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  # MongoDB - Notification Service
+  mongo-notifications:
+    image: mongo:8
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    networks:
+      - sports-net
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672"
+    networks:
+      - sports-net
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  # User Service
+  user-service:
+    image: user-service:1.0
+    environment:
+      PORT: 3001
+      MONGODB_URI: mongodb://root:root@mongo-users:27017/user-db?authSource=admin
+      JWT_SECRET: your_jwt_secret_here_change_this_in_production
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      LOG_LEVEL: info
+    networks:
+      - sports-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  # Lobby Service
+  lobby-service:
+    image: lobby-service:1.0
+    environment:
+      PORT: 3002
+      MONGODB_URI: mongodb://root:root@mongo-lobby:27017/lobby-db?authSource=admin
+      JWT_SECRET: your_jwt_secret_here_change_this_in_production
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      LOG_LEVEL: info
+    networks:
+      - sports-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  # Rating Service
+  rating-service:
+    image: rating-service:1.0
+    environment:
+      PORT: 3003
+      MONGODB_URI: mongodb://root:root@mongo-rating:27017/rating-db?authSource=admin
+      JWT_SECRET: your_jwt_secret_here_change_this_in_production
+      LOBBY_SERVICE_URL: http://lobby-service:3002
+      LOG_LEVEL: info
+    networks:
+      - sports-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  # Notification Service
+  notification-service:
+    image: notification-service:1.0
+    environment:
+      PORT: 3004
+      MONGODB_URI: mongodb://root:root@mongo-notifications:27017/notifications-db?authSource=admin
+      JWT_SECRET: your_jwt_secret_here_change_this_in_production
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      LOG_LEVEL: info
+    networks:
+      - sports-net
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 15s
+        max_attempts: 5
+        window: 180s
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+
+  # API Gateway
+  api-gateway:
+    image: api-gateway:1.0
+    ports:
+      - "3000:3000"
+    networks:
+      - sports-net
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+  
+  seed:
+    image: seed-service:1.0
+    environment:
+      USER_SERVICE_URL: http://user-service:3001
+      LOBBY_SERVICE_URL: http://lobby-service:3002
+      RATING_SERVICE_URL: http://rating-service:3003
+    networks:
+      - sports-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+
+networks:
+  sports-net:
+    driver: overlay
+    attachable: true
