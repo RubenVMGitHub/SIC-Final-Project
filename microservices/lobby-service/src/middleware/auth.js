@@ -23,9 +23,9 @@ const auth = (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // { sub: userId, email: userEmail, role: userRole }
+    req.user = decoded; // { sub: userId, email: userEmail, displayName: userDisplayName, role: userRole }
     
-    logger.info(`User authenticated: ${decoded.sub}`);
+    logger.info(`User authenticated: ${decoded.sub} (${decoded.displayName})`);
     next();
   } catch (err) {
     logger.error(`Authentication error: ${err.message}`);

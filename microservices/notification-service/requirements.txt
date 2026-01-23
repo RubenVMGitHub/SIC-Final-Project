@@ -1,0 +1,11 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+aio-pika==9.4.1
+motor==3.3.2
+pymongo==4.6.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+python-jose[cryptography]==3.3.0
+python-json-logger==2.0.7
+colorlog==6.8.0

@@ -9,8 +9,17 @@ class RatingService {
   async submitRating(fromUserId, ratingData) {
     const { toUserId, lobbyId, type, category } = ratingData;
 
+    logger.debug({
+      fromUserId,
+      toUserId,
+      lobbyId,
+      type,
+      category
+    }, 'Validating rating submission');
+
     // Validate that user is not rating themselves
     if (fromUserId === toUserId) {
+      logger.warn({ fromUserId, toUserId }, 'User attempted to rate themselves');
       throw new Error('You cannot rate yourself');
     }
 
@@ -18,6 +27,11 @@ class RatingService {
     const eligibility = await lobbyService.canUserRateInLobby(fromUserId, lobbyId);
     
     if (!eligibility.canRate) {
+      logger.warn({
+        fromUserId,
+        lobbyId,
+        reason: eligibility.reason
+      }, 'User not eligible to rate in lobby');
       throw new Error(eligibility.reason);
     }
 
@@ -26,18 +40,33 @@ class RatingService {
     const targetUserInLobby = lobbyPlayers.some(p => p.userId.toString() === toUserId);
     
     if (!targetUserInLobby) {
+      logger.warn({
+        fromUserId,
+        toUserId,
+        lobbyId
+      }, 'Target user was not in the lobby');
       throw new Error('Target user was not in this match');
     }
 
     // Validate type and category combination
-    const likCategories = ['Friendly', 'Communicative', 'Sporty', 'Fair'];
+    const likeCategories = ['Friendly', 'Communicative', 'Sporty', 'Fair'];
     const dislikeCategories = ['Toxic', 'Aggressive', 'Sloppy', 'Unfair'];
 
-    if (type === 'LIKE' && !likCategories.includes(category)) {
-      throw new Error(`Invalid category for LIKE. Must be one of: ${likCategories.join(', ')}`);
+    if (type === 'LIKE' && !likeCategories.includes(category)) {
+      logger.warn({
+        type,
+        category,
+        validCategories: likeCategories
+      }, 'Invalid category for LIKE rating');
+      throw new Error(`Invalid category for LIKE. Must be one of: ${likeCategories.join(', ')}`);
     }
 
     if (type === 'DISLIKE' && !dislikeCategories.includes(category)) {
+      logger.warn({
+        type,
+        category,
+        validCategories: dislikeCategories
+      }, 'Invalid category for DISLIKE rating');
       throw new Error(`Invalid category for DISLIKE. Must be one of: ${dislikeCategories.join(', ')}`);
     }
 
@@ -49,6 +78,12 @@ class RatingService {
     });
 
     if (existingRating) {
+      logger.warn({
+        fromUserId,
+        toUserId,
+        lobbyId,
+        existingRatingId: existingRating._id
+      }, 'User already rated this player in this lobby');
       throw new Error('You have already rated this user for this match');
     }
 
@@ -61,7 +96,14 @@ class RatingService {
       category
     });
 
-    logger.info(`Rating created: ${rating._id} from ${fromUserId} to ${toUserId} in lobby ${lobbyId}`);
+    logger.info({
+      ratingId: rating._id,
+      fromUserId,
+      toUserId,
+      lobbyId,
+      type,
+      category
+    }, 'Rating created successfully');
     
     return rating;
   }
@@ -80,9 +122,17 @@ class RatingService {
       query.category = filters.category;
     }
 
+    logger.debug({ userId, filters }, 'Fetching ratings from database');
+
     const ratings = await Rating.find(query)
       .select('-fromUserId -__v') // excludes sender to maintain anonymity
       .sort({ createdAt: -1 });
+
+    logger.debug({
+      userId,
+      count: ratings.length,
+      filters
+    }, 'Ratings fetched successfully');
 
     return ratings;
   }
@@ -91,6 +141,8 @@ class RatingService {
    * Get rating statistics for a user
    */
   async getUserRatingStats(userId) {
+    logger.debug({ userId }, 'Calculating rating statistics');
+
     const ratings = await Rating.find({ toUserId: userId });
 
     const stats = {
@@ -121,6 +173,13 @@ class RatingService {
       }
     });
 
+    logger.debug({
+      userId,
+      totalRatings: stats.totalRatings,
+      likes: stats.likes.total,
+      dislikes: stats.dislikes.total
+    }, 'Rating statistics calculated');
+
     return stats;
   }
 
@@ -128,10 +187,17 @@ class RatingService {
    * Get eligible users to rate in a specific lobby
    */
   async getEligibleUsersToRate(userId, lobbyId) {
+    logger.debug({ userId, lobbyId }, 'Finding eligible users to rate');
+
     // Check if user can rate in this lobby
     const eligibility = await lobbyService.canUserRateInLobby(userId, lobbyId);
     
     if (!eligibility.canRate) {
+      logger.warn({
+        userId,
+        lobbyId,
+        reason: eligibility.reason
+      }, 'User cannot rate in lobby');
       throw new Error(eligibility.reason);
     }
 
@@ -150,6 +216,14 @@ class RatingService {
     const eligiblePlayers = lobbyPlayers.filter(
       p => !ratedUserIds.includes(p.userId.toString())
     );
+
+    logger.info({
+      userId,
+      lobbyId,
+      totalPlayers: lobbyPlayers.length,
+      alreadyRated: ratedUserIds.length,
+      eligible: eligiblePlayers.length
+    }, 'Eligible users calculated');
 
     return eligiblePlayers;
   }

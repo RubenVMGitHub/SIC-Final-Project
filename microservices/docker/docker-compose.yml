@@ -1,4 +1,5 @@
 services:
+
   # API Gateway - NGINX
   api-gateway:
     build:
@@ -11,6 +12,7 @@ services:
       - user-service
       - lobby-service
       - rating-service
+      - notification-service
     networks:
       - sports-net
 
@@ -20,13 +22,17 @@ services:
       context: ../user-service
       dockerfile: Dockerfile
     container_name: user-service
+    ports:
+      - "3001:3001"
     environment:
       PORT: 3001
       MONGODB_URI: mongodb://root:root@mongo-user:27017/user-db?authSource=admin
       JWT_SECRET: your_jwt_secret_here_change_this_in_production
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       LOG_LEVEL: info
     depends_on:
       - mongo-user
+      - rabbitmq
     networks:
       - sports-net
 
@@ -36,13 +42,17 @@ services:
       context: ../lobby-service
       dockerfile: Dockerfile
     container_name: lobby-service
+    ports:
+      - "3002:3002"
     environment:
       PORT: 3002
       MONGODB_URI: mongodb://root:root@mongo-lobby:27017/lobby-db?authSource=admin
       JWT_SECRET: your_jwt_secret_here_change_this_in_production
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       LOG_LEVEL: info
     depends_on:
       - mongo-lobby
+      - rabbitmq
     networks:
       - sports-net
 
@@ -52,6 +62,8 @@ services:
       context: ../rating-service
       dockerfile: Dockerfile
     container_name: rating-service
+    ports:
+      - "3003:3003"
     environment:
       PORT: 3003
       MONGODB_URI: mongodb://root:root@mongo-rating:27017/rating-db?authSource=admin
@@ -64,6 +76,27 @@ services:
     networks:
       - sports-net
 
+  # Notification Service
+  notification-service:
+    build:
+      context: ../notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "3004:3004"
+    environment:
+      PORT: 3004
+      MONGODB_URI: mongodb://root:root@mongo-notifications:27017/notifications-db?authSource=admin
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      JWT_SECRET: your_jwt_secret_here_change_this_in_production
+      LOG_LEVEL: info
+    depends_on:
+      - mongo-notifications
+      - rabbitmq
+    networks:
+      - sports-net
+    restart: unless-stopped
+  
   # MongoDB Databases
   mongo-user:
     image: mongo:7
@@ -98,12 +131,14 @@ services:
     networks:
       - sports-net
 
-  mongo-analytics:
+  mongo-notifications:
     image: mongo:7
-    container_name: mongo-analytics
+    container_name: mongo-notifications
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27020:27017"
     networks:
       - sports-net
 
@@ -116,6 +151,22 @@ services:
       - "15672:15672"
     networks:
       - sports-net
+  
+  # Seed Service
+  seed:
+    build: ../seed
+    container_name: seed
+    environment:
+      USER_SERVICE_URL: http://user-service:3001
+      LOBBY_SERVICE_URL: http://lobby-service:3002
+      RATING_SERVICE_URL: http://rating-service:3003
+    depends_on:
+      - user-service
+      - lobby-service
+      - rating-service
+    networks:
+      - sports-net
+    restart: "no"
 
 networks:
   sports-net:

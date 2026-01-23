@@ -39,19 +39,19 @@ router.get('/me', auth, userController.me);
 // #swagger.security = [{ "bearerAuth": [] }]
 
 /**
- * PUT /users/me
+ * PATCH /users/me
  * Update current user profile (authenticated user only)
  */
-router.put('/me', auth, userController.updateMe);
+router.patch('/me', auth, userController.updateMe);
 // #swagger.tags = ['Users']
 // #swagger.description = 'Update current user profile'
 // #swagger.security = [{ "bearerAuth": [] }]
 
 /**
- * PUT /users/:id
+ * PATCH /users/:id
  * Update user by ID (admin or own profile)
  */
-router.put('/:id', auth, userController.updateUserById);
+router.patch('/:id', auth, userController.updateUserById);
 // #swagger.tags = ['Users']
 // #swagger.description = 'Update user profile by ID (admin or own profile only)'
 // #swagger.security = [{ "bearerAuth": [] }]
@@ -75,10 +75,10 @@ router.get('/friend-requests', auth, userController.getFriendRequests);
 // #swagger.security = [{ "bearerAuth": [] }]
 
 /**
- * POST /users/friend-requests/:requestId/respond
+ * POST /users/friend-requests/:userId/resolve
  * Accept or reject a friend request
  */
-router.post('/friend-requests/:requestId/respond', auth, userController.respondToFriendRequest);
+router.post('/friend-requests/:userId/resolve', auth, userController.respondToFriendRequest);
 // #swagger.tags = ['Friends']
 // #swagger.description = 'Respond to a friend request (accept/reject)'
 // #swagger.security = [{ "bearerAuth": [] }]

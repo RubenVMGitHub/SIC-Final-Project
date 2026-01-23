@@ -7,6 +7,7 @@ const swaggerUi = require('swagger-ui-express');
 const logger = require('./config/logger');
 const errorHandler = require('./middleware/errorHandler');
 const userRoutes = require('./routes/user.routes');
+const rabbitmq = require('./config/rabbitmq');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,6 +16,7 @@ logger.info('=== USER SERVICE STARTING ===');
 logger.info(`PORT: ${PORT}`);
 logger.info(`JWT_SECRET: ${process.env.JWT_SECRET ? 'LOADED' : 'MISSING'}`);
 logger.info(`MONGODB_URI: ${process.env.MONGODB_URI ? 'LOADED' : 'MISSING'}`);
+logger.info(`RABBITMQ_URL: ${process.env.RABBITMQ_URL ? 'LOADED' : 'MISSING'}`);
 
 // Middleware
 app.use(cors());
@@ -46,6 +48,15 @@ const connectDB = async () => {
   } catch (error) {
     logger.error('✗ MongoDB connection error:', error);
     process.exit(1);
+  }
+};
+
+const connectRabbitMQ = async () => {
+  try {
+    await rabbitmq.connect();
+  } catch (error) {
+    logger.error('✗ RabbitMQ connection error:', error);
+    // sem exit
   }
 };
 
@@ -85,9 +96,9 @@ app.use('/users', userRoutes);
 app.use(errorHandler);
 
 // Start server
-connectDB().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    logger.info(`✓ User Service running on port ${PORT}`);
-    logger.info(`✓ API Documentation: http://localhost:${PORT}/api-docs`);
+Promise.all([connectDB(), connectRabbitMQ()]).then(() => {
+  app.listen(PORT, () => {
+    logger.info(`✓ User Service listening on port ${PORT}`);
+    logger.info(`✓ Swagger docs available at http://localhost:${PORT}/api-docs`);
   });
 });

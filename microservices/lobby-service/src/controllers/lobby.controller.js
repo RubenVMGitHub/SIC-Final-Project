@@ -126,7 +126,7 @@ exports.joinLobby = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user.sub;
-    const { displayName } = req.body;
+    const displayName = req.user.displayName;
 
     // Validate ObjectId format
     const mongoose = require('mongoose');
@@ -135,7 +135,7 @@ exports.joinLobby = async (req, res, next) => {
     }
 
     if (!displayName) {
-      return res.status(400).json({ error: 'displayName is required' });
+      return res.status(400).json({ error: 'Display name not found in token' });
     }
 
     const lobby = await lobbyService.joinLobby(id, userId, displayName);

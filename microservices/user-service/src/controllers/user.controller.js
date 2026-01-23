@@ -84,14 +84,18 @@ exports.login = async (req, res, next) => {
     }
 
     const token = jwt.sign(
-      { sub: user._id, email: user.email, role: user.role }, 
+      { 
+        sub: user._id, 
+        email: user.email, 
+        displayName: user.displayName,
+        role: user.role 
+      }, 
       JWT_SECRET, 
       { expiresIn: '1d' }
     );
 
     logger.info(`User logged in successfully: ${user._id} - ${email}`);
     
-    // Return only the token
     res.json({ token });
   } catch (err) {
     logger.error(`Login error: ${err.message}`, err);
@@ -251,8 +255,8 @@ exports.getFriendRequests = async (req, res, next) => {
 
 exports.respondToFriendRequest = async (req, res, next) => {
   try {
-    const userId = req.user.sub;
-    const { requestId } = req.params;
+    const toUserId = req.user.sub;
+    const { userId: fromUserId } = req.params;
     const { action } = req.body;
     
     if (!action) {
@@ -261,11 +265,11 @@ exports.respondToFriendRequest = async (req, res, next) => {
     
     // Validate ObjectId format
     const mongoose = require('mongoose');
-    if (!mongoose.Types.ObjectId.isValid(requestId)) {
-      return res.status(400).json({ error: 'Invalid request ID format' });
+    if (!mongoose.Types.ObjectId.isValid(fromUserId)) {
+      return res.status(400).json({ error: 'Invalid user ID format' });
     }
     
-    const result = await userService.respondToFriendRequest(requestId, userId, action);
+    const result = await userService.respondToFriendRequest(toUserId, fromUserId, action);
     
     res.json(result);
   } catch (err) {

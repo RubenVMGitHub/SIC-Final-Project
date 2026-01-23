@@ -1,5 +1,6 @@
 const Lobby = require('../models/Lobby');
 const logger = require('../config/logger');
+const rabbitmq = require('../config/rabbitmq');
 
 class LobbyService {
   /**
@@ -136,8 +137,16 @@ class LobbyService {
       throw new Error('You are already in this lobby');
     }
 
-    // Add player
+    // Add player with displayName from JWT token
     lobby.players.push({ userId, displayName });
+
+    // Publish to RabbitMQ
+    await rabbitmq.publishLobbyJoin(
+      lobby._id.toString(),
+      lobby.ownerId.toString(),
+      userId,
+      lobby.sport + ' @ ' + lobby.location
+    );
 
     // Update status if full
     if (lobby.players.length >= lobby.maxPlayers) {
@@ -145,7 +154,7 @@ class LobbyService {
     }
 
     await lobby.save();
-    logger.info(`User ${userId} joined lobby ${lobbyId}`);
+    logger.info(`User ${userId} (${displayName}) joined lobby ${lobbyId}`);
     
     return lobby;
   }
