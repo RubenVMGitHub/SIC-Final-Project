@@ -8,27 +8,29 @@ const connect = async () => {
   try {
     const rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://guest:guest@rabbitmq:5672/';
     
+    logger.info({ url: rabbitmqUrl.split('@')[1] }, 'Connecting to RabbitMQ');
+    
     connection = await amqp.connect(rabbitmqUrl);
     channel = await connection.createChannel();
     
     // Declare the queue
     await channel.assertQueue('friend.requests', { durable: true });
     
-    logger.info('✓ RabbitMQ connected successfully');
+    logger.info('RabbitMQ connected successfully');
     
     // Handle connection errors
     connection.on('error', (err) => {
-      logger.error('RabbitMQ connection error:', err);
+      logger.error({ err }, 'RabbitMQ connection error');
     });
     
     connection.on('close', () => {
-      logger.warn('RabbitMQ connection closed, attempting to reconnect...');
+      logger.warn('RabbitMQ connection closed, attempting to reconnect in 5s...');
       setTimeout(connect, 5000);
     });
     
     return channel;
   } catch (error) {
-    logger.error('Failed to connect to RabbitMQ:', error);
+    logger.error({ err: error }, 'Failed to connect to RabbitMQ, retrying in 5s...');
     setTimeout(connect, 5000);
   }
 };
@@ -61,19 +63,32 @@ const publishFriendRequest = async (fromUserId, toUserId) => {
       { persistent: true }
     );
     
-    logger.info(`✓ Published friend request event: ${fromUserId} → ${toUserId}`);
+    logger.info({
+      fromUserId,
+      toUserId,
+      queue: 'friend.requests'
+    }, 'Published friend request event to RabbitMQ');
   } catch (error) {
-    logger.error('Failed to publish friend request event:', error);
+    logger.error({
+      err: error,
+      fromUserId,
+      toUserId
+    }, 'Failed to publish friend request event');
   }
 };
 
 const close = async () => {
   try {
-    if (channel) await channel.close();
-    if (connection) await connection.close();
-    logger.info('RabbitMQ connection closed');
+    if (channel) {
+      await channel.close();
+      logger.debug('RabbitMQ channel closed');
+    }
+    if (connection) {
+      await connection.close();
+      logger.info('RabbitMQ connection closed');
+    }
   } catch (error) {
-    logger.error('Error closing RabbitMQ connection:', error);
+    logger.error({ err: error }, 'Error closing RabbitMQ connection');
   }
 };
 
