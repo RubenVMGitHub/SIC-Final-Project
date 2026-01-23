@@ -5,6 +5,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-COPY . .
+COPY seed.js .
 
 CMD ["npm", "run", "seed"]

@@ -1,0 +1,12 @@
+{
+  "name": "seed",
+  "version": "1.0.0",
+  "description": "Seed script for SIC Final Project",
+  "main": "seed.js",
+  "scripts": {
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}

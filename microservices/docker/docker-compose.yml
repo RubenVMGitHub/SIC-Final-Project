@@ -146,27 +146,18 @@ services:
     networks:
       - sports-net
   
-  # Database Seeding
-  seed-data:
-    build:
-      context: ../seed-data
-      dockerfile: Dockerfile
-    container_name: seed-data
+  # Seed Service
+  seed:
+    build: ../seed
+    container_name: seed
     environment:
       USER_SERVICE_URL: http://user-service:3001
       LOBBY_SERVICE_URL: http://lobby-service:3002
       RATING_SERVICE_URL: http://rating-service:3003
-      USER_MONGODB_URI: mongodb://root:root@mongo-user:27017/user-db?authSource=admin
-      LOBBY_MONGODB_URI: mongodb://root:root@mongo-lobby:27017/lobby-db?authSource=admin
-      RATING_MONGODB_URI: mongodb://root:root@mongo-rating:27017/rating-db?authSource=admin
-      JWT_SECRET: your_jwt_secret_here_change_this_in_production
     depends_on:
-      user-service:
-        condition: service_started
-      lobby-service:
-        condition: service_started
-      rating-service:
-        condition: service_started
+      - user-service
+      - lobby-service
+      - rating-service
     networks:
       - sports-net
     restart: "no"
