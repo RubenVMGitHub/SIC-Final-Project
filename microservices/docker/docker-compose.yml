@@ -22,6 +22,8 @@ services:
       context: ../user-service
       dockerfile: Dockerfile
     container_name: user-service
+    ports:
+      - "3001:3001"
     environment:
       PORT: 3001
       MONGODB_URI: mongodb://root:root@mongo-user:27017/user-db?authSource=admin
@@ -40,6 +42,8 @@ services:
       context: ../lobby-service
       dockerfile: Dockerfile
     container_name: lobby-service
+    ports:
+      - "3002:3002"
     environment:
       PORT: 3002
       MONGODB_URI: mongodb://root:root@mongo-lobby:27017/lobby-db?authSource=admin
@@ -58,6 +62,8 @@ services:
       context: ../rating-service
       dockerfile: Dockerfile
     container_name: rating-service
+    ports:
+      - "3003:3003"
     environment:
       PORT: 3003
       MONGODB_URI: mongodb://root:root@mongo-rating:27017/rating-db?authSource=admin

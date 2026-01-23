@@ -1,5 +1,4 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -7,7 +6,7 @@ class Settings(BaseSettings):
     
     SERVICE_NAME: str = "notification-service"
     PORT: int = 3004
-    LOG_LEVEL: str = "info"
+    LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     
     MONGODB_URI: str = "mongodb://root:root@mongo-notifications:27017/notifications-db?authSource=admin"
     MONGODB_DB_NAME: str = "notifications-db"

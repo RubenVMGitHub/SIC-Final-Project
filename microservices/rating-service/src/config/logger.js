@@ -7,8 +7,29 @@ const logger = pino({
     options: {
       colorize: true,
       translateTime: 'SYS:standard',
-      ignore: 'pid,hostname'
+      ignore: 'pid,hostname',
+      messageFormat: '{levelLabel} - {msg}',
+      errorLikeObjectKeys: ['err', 'error']
     }
+  },
+  formatters: {
+    level: (label) => {
+      return { level: label.toUpperCase() };
+    }
+  },
+  serializers: {
+    req: (req) => ({
+      method: req.method,
+      url: req.url,
+      headers: {
+        host: req.headers.host,
+        'user-agent': req.headers['user-agent']
+      }
+    }),
+    res: (res) => ({
+      statusCode: res.statusCode
+    }),
+    err: pino.stdSerializers.err
   }
 });
 

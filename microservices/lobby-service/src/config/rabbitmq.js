@@ -14,7 +14,7 @@ const connect = async () => {
     // Declare the queue
     await channel.assertQueue('lobby.events', { durable: true });
     
-    logger.info('✓ RabbitMQ connected successfully');
+    logger.info('RabbitMQ connected successfully');
     
     // Handle connection errors
     connection.on('error', (err) => {
@@ -63,7 +63,7 @@ const publishLobbyJoin = async (lobbyId, ownerId, playerId, lobbyName) => {
       { persistent: true }
     );
     
-    logger.info(`✓ Published lobby join event: ${playerId} joined ${lobbyName}`);
+    logger.info(`Published lobby join event: ${playerId} joined ${lobbyName}`);
   } catch (error) {
     logger.error('Failed to publish lobby join event:', error);
   }

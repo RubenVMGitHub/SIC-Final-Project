@@ -3,10 +3,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const pinoHttp = require('pino-http');
+const swaggerUi = require('swagger-ui-express');
 const logger = require('./config/logger');
 const errorHandler = require('./middleware/errorHandler');
 const lobbyRoutes = require('./routes/lobby.routes');
 const rabbitmq = require('./config/rabbitmq');
+const swaggerSpec = require('./config/swagger');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -43,9 +45,9 @@ app.use(pinoHttp({
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    logger.info('✓ MongoDB connected successfully');
+    logger.info('MongoDB connected successfully');
   } catch (error) {
-    logger.error('✗ MongoDB connection error:', error);
+    logger.error('MongoDB connection error:', error);
     process.exit(1);
   }
 };
@@ -54,12 +56,26 @@ const connectRabbitMQ = async () => {
   try {
     await rabbitmq.connect();
   } catch (error) {
-    logger.error('✗ RabbitMQ connection error:', error);
+    logger.error('RabbitMQ connection error:', error);
     // sem exit
   }
 };
 
-// Health check endpoint
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Health check endpoint
+ *     description: Returns the health status of the service including database connection
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthCheck'
+ */
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 
@@ -67,6 +83,14 @@ app.get('/health', (req, res) => {
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Lobby Service API Documentation'
+}));
+
+logger.info('Swagger documentation available at /api-docs');
 
 // Routes
 app.use('/lobbies', lobbyRoutes);
@@ -77,6 +101,7 @@ app.use(errorHandler);
 // Start server
 Promise.all([connectDB(), connectRabbitMQ()]).then(() => {
   app.listen(PORT, () => {
-    logger.info(`✓ Lobby Service listening on port ${PORT}`);
+    logger.info(`Lobby Service listening on port ${PORT}`);
+    logger.info(`API Documentation: http://localhost:${PORT}/api-docs`);
   });
 });
